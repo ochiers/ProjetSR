@@ -75,4 +75,10 @@ public interface JvnObject extends Serializable {
     
     
     public void setRegisterInfo(JvnLocalServer js, String name);
+    
+    public Serializable getTheObject();
+
+    public void setTheObject(Serializable theObject);
+    
+    
 }

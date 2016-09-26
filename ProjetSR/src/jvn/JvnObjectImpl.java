@@ -5,6 +5,7 @@ import java.io.Serializable;
 public class JvnObjectImpl implements JvnObject {
 
     Serializable theObject;
+
     int id;
 
     public transient JvnLocalServer leServeur;
@@ -96,4 +97,13 @@ public class JvnObjectImpl implements JvnObject {
 	this.nameGiven = name;
 
     }
+    
+    public Serializable getTheObject() {
+        return theObject;
+    }
+
+    public void setTheObject(Serializable theObject) {
+        this.theObject = theObject;
+    }
+    
 }

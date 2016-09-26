@@ -8,8 +8,6 @@
 
 package jvn;
 
-import irc.Sentence;
-
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
@@ -24,8 +22,8 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
     private int counter;
     private HashMap<String, Integer> serviceNommage;
     private HashMap<Integer, JvnObject> cache;
-    private HashMap<Integer, CoupleVerrou> verrous;
-    
+    private HashMap<Integer, List<CoupleVerrou>> verrous;
+
     /**
      * Default constructor
      * 
@@ -36,7 +34,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 	this.counter = 0;
 	this.serviceNommage = new HashMap<String, Integer>();
 	this.cache = new HashMap<Integer, JvnObject>();
-	this.verrous = new HashMap<Integer, CoupleVerrou>();
+	this.verrous = new HashMap<Integer, List<CoupleVerrou>>();
     }
 
     /**
@@ -45,7 +43,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException
      *             ,JvnException
      **/
-    public int jvnGetObjectId() throws java.rmi.RemoteException, jvn.JvnException {
+    public synchronized int jvnGetObjectId() throws java.rmi.RemoteException, jvn.JvnException {
 	return counter++;
     }
 
@@ -63,7 +61,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException
      *             ,JvnException
      **/
-    public void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js) throws java.rmi.RemoteException, jvn.JvnException {
+    public synchronized void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js) throws java.rmi.RemoteException, jvn.JvnException {
 	System.out.println("Register demandé");
 	this.serviceNommage.put(jon, jo.jvnGetObjectId());
 	this.cache.put(jo.jvnGetObjectId(), jo);
@@ -79,13 +77,13 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException
      *             ,JvnException
      **/
-    public JvnObject jvnLookupObject(String jon, JvnRemoteServer js) throws java.rmi.RemoteException, jvn.JvnException {
-	
+    public synchronized JvnObject jvnLookupObject(String jon, JvnRemoteServer js) throws java.rmi.RemoteException, jvn.JvnException {
+
 	System.out.println("Lookup demandé sur " + jon);
-	
+
 	Integer id = this.serviceNommage.get(jon);
 	return this.cache.get(id);
-	
+
     }
 
     /**
@@ -99,9 +97,40 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException
      *             , JvnException
      **/
-    public Serializable jvnLockRead(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-	// to be completed
-	return null;
+    public synchronized Serializable jvnLockRead(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
+	/*
+	 * joi doit savoir si on a un lock en write si oui, invalidateWrite sinon verrou lecture + return object
+	 */
+
+	JvnObject res = this.cache.get(joi);
+
+	List<CoupleVerrou> list = this.verrous.get(joi);
+
+	if (list == null) {
+	    list = new LinkedList<CoupleVerrou>();
+	    list.add(new CoupleVerrou(js, StateLock.R));
+	    this.verrous.put(joi, list);
+	} else {
+
+	    Iterator<CoupleVerrou> i = list.iterator();
+	    while (i.hasNext()) {
+		CoupleVerrou couple = i.next();
+		if (couple.getJs() == js)
+		    couple.setState(StateLock.R);
+		else {
+		    switch (couple.getState()) {
+		    case W:
+			res.setTheObject(couple.getJs().jvnInvalidateWriterForReader(joi));
+			this.cache.put(joi, res);
+			couple.setState(StateLock.R);
+			break;
+		    default:
+			break;
+		    }
+		}
+	    }
+	}
+	return res.getTheObject();
     }
 
     /**
@@ -115,9 +144,42 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException
      *             , JvnException
      **/
-    public Serializable jvnLockWrite(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
-	// to be completed
-	return null;
+    public synchronized Serializable jvnLockWrite(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
+
+	JvnObject res = this.cache.get(joi);
+	System.out.println("res null ? : " + (res == null));
+	List<CoupleVerrou> list = this.verrous.get(joi);
+	if (list == null) {
+	    list = new LinkedList<CoupleVerrou>();
+	    list.add(new CoupleVerrou(js, StateLock.W));
+	    this.verrous.put(joi, list);
+	} else {
+
+	    Iterator<CoupleVerrou> i = list.iterator();
+	    while (i.hasNext()) {
+		CoupleVerrou couple = i.next();
+		if (couple.getJs() == js)
+		    couple.setState(StateLock.W);
+		else {
+		    switch (couple.getState()) {
+		    case W:
+			res.setTheObject(couple.getJs().jvnInvalidateWriter(joi));
+			this.cache.put(joi, res);
+			couple.setState(StateLock.NL);
+			break;
+		    case R:
+			couple.getJs().jvnInvalidateReader(joi);
+			couple.setState(StateLock.NL);
+			break;
+		    default:
+			break;
+		    }
+		}
+	    }
+	}
+	if(res == null)
+	    return null;
+	return res.getTheObject();
     }
 
     /**
@@ -128,7 +190,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      * @throws java.rmi.RemoteException
      *             , JvnException
      **/
-    public void jvnTerminate(JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
+    public synchronized void jvnTerminate(JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
 
     }
 
@@ -136,13 +198,16 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 
 	try {
 
-	    JvnRemoteCoord coordinateur = new JvnCoordImpl();
+	    /*JvnRemoteCoord coordinateur = new JvnCoordImpl();
 
-	    //JvnRemoteCoord h_stub = (JvnRemoteCoord) UnicastRemoteObject.exportObject(coordinateur, 0);
+	    // JvnRemoteCoord h_stub = (JvnRemoteCoord) UnicastRemoteObject.exportObject(coordinateur, 0);
 	    Registry registre = LocateRegistry.getRegistry();
-	    registre.bind("serveur", coordinateur);
+	    registre.bind("serveur", coordinateur);*/
 	    
-
+	    JvnRemoteCoord coordinateur = new JvnCoordImpl();
+	    Registry registre = LocateRegistry.createRegistry(1099);
+	    registre.bind("serveur", coordinateur);
+	    System.out.println("Coordinateur lancé !");
 	} catch (Exception e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
