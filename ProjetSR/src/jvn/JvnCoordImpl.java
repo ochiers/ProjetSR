@@ -15,13 +15,17 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.io.Serializable;
 
 public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord {
 
     private int counter;
-    private HashMap<String, JvnObject> storage;
-
+    private HashMap<String, Integer> serviceNommage;
+    private HashMap<Integer, JvnObject> cache;
+    private HashMap<Integer, CoupleVerrou> verrous;
+    
     /**
      * Default constructor
      * 
@@ -30,7 +34,9 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
     private JvnCoordImpl() throws Exception {
 	super();
 	this.counter = 0;
-	this.storage = new HashMap<String, JvnObject>();
+	this.serviceNommage = new HashMap<String, Integer>();
+	this.cache = new HashMap<Integer, JvnObject>();
+	this.verrous = new HashMap<Integer, CoupleVerrou>();
     }
 
     /**
@@ -40,7 +46,6 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      *             ,JvnException
      **/
     public int jvnGetObjectId() throws java.rmi.RemoteException, jvn.JvnException {
-
 	return counter++;
     }
 
@@ -60,8 +65,8 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      **/
     public void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js) throws java.rmi.RemoteException, jvn.JvnException {
 	System.out.println("Register demandé");
-	this.storage.put(jon, jo);
-
+	this.serviceNommage.put(jon, jo.jvnGetObjectId());
+	this.cache.put(jo.jvnGetObjectId(), jo);
     }
 
     /**
@@ -78,15 +83,9 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 	
 	System.out.println("Lookup demandé sur " + jon);
 	
-	Iterator<String> it = this.storage.keySet().iterator();
-	while(it.hasNext()){
-	    String key = it.next();
-	    System.out.println(key + " : " + this.storage.get(key));
-	}
+	Integer id = this.serviceNommage.get(jon);
+	return this.cache.get(id);
 	
-	if(this.storage.get(jon) != null)
-	    System.out.println(((Sentence)this.storage.get(jon).jvnGetObjectState()).read());
-	return this.storage.get(jon);
     }
 
     /**

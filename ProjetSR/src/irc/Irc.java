@@ -140,7 +140,6 @@ class writeListener implements ActionListener {
 
 	    // lock the object in write mode
 	    irc.sentence.jvnLockWrite();
-
 	    // invoke the method
 	    ((Sentence) (irc.sentence.jvnGetObjectState())).write(s);
 	    

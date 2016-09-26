@@ -72,4 +72,7 @@ public interface JvnObject extends Serializable {
      * @throws JvnException
      **/
     public Serializable jvnInvalidateWriterForReader() throws jvn.JvnException;
+    
+    
+    public void setRegisterInfo(JvnLocalServer js, String name);
 }

@@ -6,40 +6,68 @@ public class JvnObjectImpl implements JvnObject {
 
     Serializable theObject;
     int id;
-    
-    public Lock readLock;
-    public Lock writeLock;
-    
-    public JvnLocalServer leServeur;
-    
-    public JvnObjectImpl(Serializable o, int id, JvnLocalServer js){
-	
+
+    public transient JvnLocalServer leServeur;
+    public String nameGiven;
+
+    private StateLock state;
+
+    public JvnObjectImpl(Serializable o, int id) {
 	this.theObject = o;
 	this.id = id;
-	this.leServeur = js;
-	this.readLock = new Lock();
-	this.writeLock = new Lock();
     }
-    
+
     public void jvnLockRead() throws JvnException {
-	this.readLock.setLocked(true);
+	if (this.leServeur != null)
+	    this.theObject = this.leServeur.jvnLookupObject(nameGiven).jvnGetObjectState();
+
+	switch (state) {
+	case NL:
+	case RC:
+	    this.state = StateLock.R;
+	    this.theObject = this.leServeur.jvnLockRead(id);
+	    break;
+	case W:
+	    /* Cas à redéfinir */
+	    break;
+	case WC:
+	    this.state = StateLock.RWC;
+	    this.theObject = this.leServeur.jvnLockRead(id);
+	    break;
+	default: // state = R ou state = RWC
+	    break;
+	}
 
     }
 
     public void jvnLockWrite() throws JvnException {
-	this.writeLock.setLocked(true);
-	
+	switch (state) {
+	case NL:
+	case RC:
+	    this.state = StateLock.W;
+	    this.theObject = this.leServeur.jvnLockWrite(id);
+	    break;
+	case R:
+	case RWC:
+	    break;
+	case WC:
+	    this.state = StateLock.W;
+	    break;
+	default: // state = W
+	    break;
+	}
+
     }
 
     public void jvnUnLock() throws JvnException {
-	this.readLock.setLocked(false);
-	this.writeLock.setLocked(false);
-	//this.leServeur.jvnRegisterObject(jon, jo);
+	// if (this.leServeur != null)
+	// this.leServeur.jvnRegisterObject(nameGiven, this);
+
+	this.state = StateLock.NL;
 
     }
 
     public int jvnGetObjectId() throws JvnException {
-	// TODO Auto-generated method stub
 	return id;
     }
 
@@ -48,31 +76,24 @@ public class JvnObjectImpl implements JvnObject {
     }
 
     public void jvnInvalidateReader() throws JvnException {
-	
-	while(this.readLock.isUsed())
-	    try {
-		wait();
-	    } catch (InterruptedException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-	    }
-	
-	this.readLock.setLocked(false);
-
+	this.state = StateLock.NL;
     }
 
     public Serializable jvnInvalidateWriter() throws JvnException {
-
-	this.writeLock.setLocked(false);
+	this.state = StateLock.NL;
+//	this.wait();
 	return theObject;
     }
 
     public Serializable jvnInvalidateWriterForReader() throws JvnException {
-	
-	this.readLock.setLocked(true);
-	this.writeLock.setLocked(false);
-	
+	this.state = StateLock.NL;
 	return theObject;
     }
 
+    public void setRegisterInfo(JvnLocalServer js, String name) {
+
+	this.leServeur = js;
+	this.nameGiven = name;
+
+    }
 }
