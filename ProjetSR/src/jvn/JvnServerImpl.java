@@ -21,6 +21,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
     // A JVN server is managed as a singleton
     private static JvnServerImpl js = null;
     private HashMap<Integer, JvnObject> cache;
+    private HashMap<String, Integer> serviceNommage;
 
     private JvnRemoteCoord coordinateur;
 
@@ -31,9 +32,9 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      **/
     private JvnServerImpl() throws Exception {
 	super();
-	cache = new HashMap<Integer, JvnObject>();
+	this.cache = new HashMap<Integer, JvnObject>();
+	this.serviceNommage = new HashMap<String, Integer>();
 
-	// to be completed
     }
 
     /**
@@ -80,7 +81,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
 	    JvnObject object = new JvnObjectImpl(o, id);
 	    this.coordinateur.jvnLockWrite(id, this);
 
-	    System.out.println("creation d'un objet d'id=" + id);
+	    System.out.println("<CLIENT>Creation d'un objet d'id=" + id);
 	    return object;
 	} catch (RemoteException e) {
 	    e.printStackTrace();
@@ -99,9 +100,10 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      **/
     public void jvnRegisterObject(String jon, JvnObject jo) throws jvn.JvnException {
 
-	System.out.println("register");
+	System.out.println("<CLIENT>Register de " + jon);
 	jo.setRegisterInfo(this, jon);
-	cache.put(jo.jvnGetObjectId(), jo);
+	this.cache.put(jo.jvnGetObjectId(), jo);
+	this.serviceNommage.put(jon, jo.jvnGetObjectId());
 	try {
 	    coordinateur.jvnRegisterObject(jon, jo, this);
 	} catch (RemoteException e) {
@@ -119,15 +121,19 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      **/
     public JvnObject jvnLookupObject(String jon) throws jvn.JvnException {
 
-	System.out.println("lookup ... ");
-	if (!cache.containsKey(jon))
+	System.out.print("<CLIENT>lookup ... ");
+	Integer id = this.serviceNommage.get(jon);
+	if (!cache.containsKey(id))
 	    try {
 		System.out.println("... demande au coordinateur");
 		JvnObject o = coordinateur.jvnLookupObject(jon, this);
 		if (o != null) {
 		    o.setRegisterInfo(this, jon);
-		    System.out.print(((Sentence) o.jvnGetObjectState()).read());
+		    System.out.print("Sentence : " + ((Sentence) o.jvnGetObjectState()).read());
+		    this.cache.put(o.jvnGetObjectId(), o);
+		this.serviceNommage.put(jon, o.jvnGetObjectId());
 		}
+		
 		return o;
 	    } catch (RemoteException e) {
 		// TODO Auto-generated catch block
@@ -135,8 +141,8 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
 		return null;
 	    }
 	else {
-	    System.out.println("... dans le cache");
-	    return cache.get(jon);
+	    System.out.println("... dans le cache " + this.cache.get(jon));
+	    return this.cache.get(id);
 	}
     }
 
@@ -169,6 +175,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      **/
     public Serializable jvnLockWrite(int joi) throws JvnException {
 	try {
+	    System.out.println("<ServeurLocal>Demande de lock write au coordianteur");
 	    return this.coordinateur.jvnLockWrite(joi, this);
 	} catch (RemoteException e) {
 	    // TODO Auto-generated catch block
@@ -188,6 +195,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      **/
     public void jvnInvalidateReader(int joi) throws java.rmi.RemoteException, jvn.JvnException {
 	// to be completed
+	this.cache.get(joi).jvnInvalidateReader();
     };
 
     /**
@@ -201,7 +209,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      **/
     public Serializable jvnInvalidateWriter(int joi) throws java.rmi.RemoteException, jvn.JvnException {
 	// to be completed
-	return null;
+	return this.cache.get(joi).jvnInvalidateWriter();
     };
 
     /**
@@ -215,7 +223,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      **/
     public Serializable jvnInvalidateWriterForReader(int joi) throws java.rmi.RemoteException, jvn.JvnException {
 	// to be completed
-	return null;
+	return this.cache.get(joi).jvnInvalidateWriterForReader();
     }
 
     public JvnRemoteCoord getCoordinateur() {

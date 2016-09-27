@@ -16,24 +16,32 @@ public class JvnObjectImpl implements JvnObject {
     public JvnObjectImpl(Serializable o, int id) {
 	this.theObject = o;
 	this.id = id;
+	this.state = StateLock.NL;
     }
 
     public void jvnLockRead() throws JvnException {
-	if (this.leServeur != null)
-	    this.theObject = this.leServeur.jvnLookupObject(nameGiven).jvnGetObjectState();
-
+	/*
+	 * if (this.leServeur != null) this.theObject = this.leServeur.jvnLookupObject(nameGiven).jvnGetObjectState();
+	 */
+	System.out.println("<jvnObject id=" + this.id + ">Demande verrou read, etat actuel : " + this.state);
 	switch (state) {
 	case NL:
 	case RC:
 	    this.state = StateLock.R;
-	    this.theObject = this.leServeur.jvnLockRead(id);
+	    System.out.println("<jvnObject id=" + this.id + ">Verrou : NL|RC->R");
+	    // this.theObject = this.leServeur.jvnLockRead(id);
+	    this.theObject = this.leServeur.jvnLookupObject(this.nameGiven).getTheObject();
+	    System.out.println("<jvnObject id=" + this.id + ">Serializable = " + this.theObject);
+
 	    break;
 	case W:
-	    /* Cas à redéfinir */
+	    System.out.println("<jvnObject id=" + this.id + ">Verrou : W->????");
 	    break;
 	case WC:
 	    this.state = StateLock.RWC;
+	    System.out.println("<jvnObject id=" + this.id + ">Verrou : WC->RWC");
 	    this.theObject = this.leServeur.jvnLockRead(id);
+	    System.out.println("<jvnObject id=" + this.id + ">Serializable = " + this.theObject);
 	    break;
 	default: // state = R ou state = RWC
 	    break;
@@ -46,13 +54,17 @@ public class JvnObjectImpl implements JvnObject {
 	case NL:
 	case RC:
 	    this.state = StateLock.W;
-	    this.theObject = this.leServeur.jvnLockWrite(id);
+	    Serializable s = this.leServeur.jvnLockWrite(id);
+	    if (s != null)// Si dans le coordinateur
+		this.theObject = s;
+	    System.out.println("<jvnObject id=" + this.id + ">Verrou : NL|RC->W");
 	    break;
 	case R:
 	case RWC:
 	    break;
 	case WC:
 	    this.state = StateLock.W;
+	    System.out.println("<jvnObject id=" + this.id + ">Verrou : WC->W");
 	    break;
 	default: // state = W
 	    break;
@@ -64,7 +76,30 @@ public class JvnObjectImpl implements JvnObject {
 	// if (this.leServeur != null)
 	// this.leServeur.jvnRegisterObject(nameGiven, this);
 
-	this.state = StateLock.NL;
+	System.out.println("Etat avant le unlock : " + this.state);
+
+	switch (this.state) {
+	case W:
+	    this.leServeur.jvnRegisterObject(nameGiven, this);
+	    this.state = StateLock.WC;
+	    break;
+	case R:
+	    this.state = StateLock.RC;
+	    break;
+	case RC:
+	    break;
+	case RWC:
+	    break;
+	case WC:
+	    break;
+	case NL:
+	    break;
+	}
+
+	System.out.println("Etat apres le unlock : " + this.state);
+	/*
+	 * if(this.state == StateLock.W) this.leServeur.jvnRegisterObject(nameGiven, this); this.state = StateLock.NL;
+	 */
 
     }
 
@@ -77,17 +112,50 @@ public class JvnObjectImpl implements JvnObject {
     }
 
     public void jvnInvalidateReader() throws JvnException {
+	System.out.println("<jvnObject id=" + this.id + ">InvalidateReader " + this.state + "->NL");
 	this.state = StateLock.NL;
     }
 
     public Serializable jvnInvalidateWriter() throws JvnException {
-	this.state = StateLock.NL;
-//	this.wait();
+	System.out.println("<jvnObject id=" + this.id + ">InvalidateWriter " + this.state + "->NL");
+
+	switch (this.state) {
+	case W:
+	    this.state = StateLock.NL;
+	    break;
+	case R:
+	    break;
+	case RC:
+	    break;
+	case RWC:
+	    break;
+	case WC:
+	    break;
+	case NL:
+	    break;
+	}
+	// this.wait();
 	return theObject;
     }
 
     public Serializable jvnInvalidateWriterForReader() throws JvnException {
-	this.state = StateLock.NL;
+	System.out.println("<jvnObject id=" + this.id + ">InvalidateWriterForReader " + this.state + "->RC");
+	switch (this.state) {
+	case W:
+	    this.state = StateLock.RC;
+	    break;
+	case R:
+	    break;
+	case RC:
+	    break;
+	case RWC:
+	    this.state = StateLock.R;
+	    break;
+	case WC:
+	    break;
+	case NL:
+	    break;
+	}
 	return theObject;
     }
 
@@ -97,13 +165,20 @@ public class JvnObjectImpl implements JvnObject {
 	this.nameGiven = name;
 
     }
-    
+
     public Serializable getTheObject() {
-        return theObject;
+	return theObject;
     }
 
     public void setTheObject(Serializable theObject) {
-        this.theObject = theObject;
+	this.theObject = theObject;
     }
-    
+
+    @Override
+    public String toString() {
+
+	return "Object id = " + this.id + ", nom : " + this.nameGiven;
+
+    }
+
 }
