@@ -89,11 +89,11 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 	if (o != null && id != null) {
 
 	    if (this.verrous.get(id) != null) {
-		this.verrous.get(id).add(new CoupleVerrou(js, StateLock.WC));
+		this.verrous.get(id).add(new CoupleVerrou(js, StateLock.NL));
 
 	    } else {
 		List<CoupleVerrou> l = new LinkedList<CoupleVerrou>();
-		l.add(new CoupleVerrou(js, StateLock.WC));
+		l.add(new CoupleVerrou(js, StateLock.NL));
 		this.verrous.put(id, l);
 	    }
 
