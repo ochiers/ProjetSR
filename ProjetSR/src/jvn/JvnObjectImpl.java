@@ -13,11 +13,13 @@ public class JvnObjectImpl implements JvnObject {
 
     private StateLock state;
 
-    public JvnObjectImpl(Serializable o, int id) {
+    public JvnObjectImpl(Serializable o, int id, JvnLocalServer js) {
 	this.theObject = o;
 	this.id = id;
 	this.state = StateLock.NL;
+	this.leServeur = js;
     }
+    
 
     public void jvnLockRead() throws JvnException {
 	/*
@@ -46,10 +48,11 @@ public class JvnObjectImpl implements JvnObject {
 	default: // state = R ou state = RWC
 	    break;
 	}
-
+	System.out.println("<jvnObject id=" + this.id + ">Demande verrou read, etat a la sortie : " + this.state);
     }
 
     public void jvnLockWrite() throws JvnException {
+	System.out.println("<jvnObject id=" + this.id + ">Demande verrou write, etat actuel : " + this.state);
 	switch (state) {
 	case NL:
 	case RC:
@@ -69,7 +72,7 @@ public class JvnObjectImpl implements JvnObject {
 	default: // state = W
 	    break;
 	}
-
+	System.out.println("<jvnObject id=" + this.id + ">Demande verrou write, etat a la sortie : " + this.state);
     }
 
     public void jvnUnLock() throws JvnException {
@@ -89,6 +92,7 @@ public class JvnObjectImpl implements JvnObject {
 	case RC:
 	    break;
 	case RWC:
+	    this.state = StateLock.WC;
 	    break;
 	case WC:
 	    break;
@@ -165,6 +169,7 @@ public class JvnObjectImpl implements JvnObject {
 	this.nameGiven = name;
 
     }
+    
 
     public Serializable getTheObject() {
 	return theObject;

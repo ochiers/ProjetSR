@@ -78,8 +78,8 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
 
 	try {
 	    int id = this.coordinateur.jvnGetObjectId();
-	    JvnObject object = new JvnObjectImpl(o, id);
-	    this.coordinateur.jvnLockWrite(id, this);
+	    JvnObject object = new JvnObjectImpl(o, id,this);
+	    object.jvnLockWrite();
 
 	    System.out.println("<CLIENT>Creation d'un objet d'id=" + id);
 	    return object;
