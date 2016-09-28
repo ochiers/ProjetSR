@@ -9,6 +9,8 @@ package jvn;
 
 import java.io.*;
 
+import com.sun.corba.se.spi.orbutil.fsm.State;
+
 /**
  * Interface of a JVN object. The serializable property is required in order to be able to transfer a reference to a JVN object remotely
  */
@@ -79,6 +81,5 @@ public interface JvnObject extends Serializable {
     public Serializable getTheObject();
 
     public void setTheObject(Serializable theObject);
-    
     
 }

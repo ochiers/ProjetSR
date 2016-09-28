@@ -64,7 +64,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      *             ,JvnException
      **/
     public synchronized void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js) throws java.rmi.RemoteException, jvn.JvnException {
-	Tools.println("<COORDINATEUR %date>Register demandé de l'objet d'id " + jo.toString());
+	//Tools.println("<COORDINATEUR %date>Register demandé de l'objet d'id " + jo.toString());
 	this.serviceNommage.put(jon, jo.jvnGetObjectId());
 	this.cache.put(jo.jvnGetObjectId(), jo);
     }
@@ -81,7 +81,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      **/
     public synchronized JvnObject jvnLookupObject(String jon, JvnRemoteServer js) throws java.rmi.RemoteException, jvn.JvnException {
 
-	Tools.println("<COORDINATEUR %date>Lookup demandé sur " + jon);
+	//Tools.println("<COORDINATEUR %date>Lookup demandé sur " + jon);
 
 	Integer id = this.serviceNommage.get(jon);
 	JvnObject o = this.cache.get(id);
@@ -122,9 +122,6 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 	JvnObject res = this.cache.get(joi);
 
 	Tools.println("<COORDIANTEUR %date>Demande de lock READ pour l'objet d'id=" + joi);
-	Tools.println("<COORDIANTEUR %date>res null ? : " + (res == null));
-
-	Tools.println("<COORDIANTEUR %date>res.object null ? : " + (res.getTheObject() == null));
 
 	List<CoupleVerrou> list = this.verrous.get(joi);
 
@@ -137,21 +134,22 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 	    Iterator<CoupleVerrou> i = list.iterator();
 	    while (i.hasNext()) {
 		CoupleVerrou couple = i.next();
-		if (couple.getJs().equals(js))
-		    couple.setState(StateLock.R);
-		else {
+//		if (couple.getJs().equals(js))
+//		    couple.setState(StateLock.R);
+//		else {
 		    switch (couple.getState()) {
 		    case W:
-			Tools.println("<COORDIANTEUR %date" + Date.from(Instant.now()).toString() + ">Case W");
+			Tools.println("<COORDIANTEUR %date>Case W");
 			res.setTheObject(couple.getJs().jvnInvalidateWriterForReader(joi));
 			this.cache.put(joi, res);
 			couple.setState(StateLock.R);
 			break;
 		    default:
+			Tools.println("<COORDIANTEUR %date>Case "+couple.getState());
 			break;
 		    }
 		}
-	    }
+//	    }
 	}
 	return res.getTheObject();
     }
@@ -171,9 +169,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 
 	JvnObject res = this.cache.get(joi);
 	Tools.println("<COORDIANTEUR %date>Demande de lock WRITE pour l'objet d'id=" + joi);
-	Tools.println("<COORDIANTEUR %date>res null ? : " + (res == null));
-	if (res != null)
-	    System.out.println("<COORDIANTEUR>res.object null ? : " + (res.getTheObject() == null));
+	
 	List<CoupleVerrou> list = this.verrous.get(joi);
 	if (list == null) {
 	    Tools.println("<COORDIANTEUR %date>Objet nouveau, creation d'une liste de verrous avec un verrou en W");
@@ -185,9 +181,9 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 	    Iterator<CoupleVerrou> i = list.iterator();
 	    while (i.hasNext()) {
 		CoupleVerrou couple = i.next();
-		if (couple.getJs().equals(js))
-		    couple.setState(StateLock.W);
-		else {
+//		if (couple.getJs().equals(js))
+//		    couple.setState(StateLock.W);
+//		else {
 		    switch (couple.getState()) {
 		    case W:
 			res.setTheObject(couple.getJs().jvnInvalidateWriter(joi));
@@ -202,7 +198,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 			break;
 		    }
 		}
-	    }
+//	    }
 	}
 	if (res == null)
 	    return null;

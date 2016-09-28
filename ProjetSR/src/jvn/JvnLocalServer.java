@@ -72,4 +72,7 @@ public interface JvnLocalServer {
      * @throws JvnException
      **/
     public void jvnTerminate() throws jvn.JvnException;
+    
+    
+    public void jvnUnlock(int joi);
 }

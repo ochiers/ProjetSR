@@ -17,6 +17,12 @@ public class Sentence implements java.io.Serializable {
 
     public void write(String text) {
 	data = text;
+	/*try {
+	    Thread.sleep(20000);
+	} catch (InterruptedException e) {
+	    // TODO Auto-generated catch block
+	    e.printStackTrace();
+	}*/
     }
 
     public String read() {
