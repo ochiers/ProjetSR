@@ -81,7 +81,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
 	    JvnObject object = new JvnObjectImpl(o, id,this);
 	    object.jvnLockWrite();
 
-	    System.out.println("<CLIENT>Creation d'un objet d'id=" + id);
+	    Tools.println("<CLIENT %date>Creation d'un objet d'id=" + id);
 	    return object;
 	} catch (RemoteException e) {
 	    e.printStackTrace();
@@ -100,7 +100,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      **/
     public void jvnRegisterObject(String jon, JvnObject jo) throws jvn.JvnException {
 
-	System.out.println("<CLIENT>Register de " + jon);
+	Tools.println("<CLIENT %date>Register de " + jon);
 	jo.setRegisterInfo(this, jon);
 	this.cache.put(jo.jvnGetObjectId(), jo);
 	this.serviceNommage.put(jon, jo.jvnGetObjectId());
@@ -121,15 +121,15 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      **/
     public JvnObject jvnLookupObject(String jon) throws jvn.JvnException {
 
-	System.out.print("<CLIENT>lookup ... ");
+	Tools.print("<CLIENT %d>lookup ... ");
 	Integer id = this.serviceNommage.get(jon);
 	if (!cache.containsKey(id))
 	    try {
-		System.out.println("... demande au coordinateur");
+		Tools.println("... demande au coordinateur");
 		JvnObject o = coordinateur.jvnLookupObject(jon, this);
 		if (o != null) {
 		    o.setRegisterInfo(this, jon);
-		    System.out.print("Sentence : " + ((Sentence) o.jvnGetObjectState()).read());
+		    Tools.print("Sentence : " + ((Sentence) o.jvnGetObjectState()).read());
 		    this.cache.put(o.jvnGetObjectId(), o);
 		this.serviceNommage.put(jon, o.jvnGetObjectId());
 		}
@@ -141,7 +141,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
 		return null;
 	    }
 	else {
-	    System.out.println("... dans le cache " + this.cache.get(jon));
+	    Tools.println("... dans le cache " + this.cache.get(jon));
 	    return this.cache.get(id);
 	}
     }
@@ -175,7 +175,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      **/
     public Serializable jvnLockWrite(int joi) throws JvnException {
 	try {
-	    System.out.println("<ServeurLocal>Demande de lock write au coordianteur");
+	    Tools.println("<ServeurLocal %date>Demande de lock write au coordianteur");
 	    return this.coordinateur.jvnLockWrite(joi, this);
 	} catch (RemoteException e) {
 	    // TODO Auto-generated catch block

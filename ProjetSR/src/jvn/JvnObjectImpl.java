@@ -25,30 +25,30 @@ public class JvnObjectImpl implements JvnObject {
 	/*
 	 * if (this.leServeur != null) this.theObject = this.leServeur.jvnLookupObject(nameGiven).jvnGetObjectState();
 	 */
-	System.out.println("<jvnObject id=" + this.id + ">Demande verrou read, etat actuel : " + this.state);
+	Tools.println("<jvnObject %date id=" + this.id + ">Demande verrou read, etat actuel : " + this.state);
 	switch (state) {
 	case NL:
 	case RC:
 	    this.state = StateLock.R;
-	    System.out.println("<jvnObject id=" + this.id + ">Verrou : NL|RC->R");
+	    Tools.println("<jvnObject %date id=" + this.id + ">Verrou : NL|RC->R");
 	    // this.theObject = this.leServeur.jvnLockRead(id);
 	    this.theObject = this.leServeur.jvnLookupObject(this.nameGiven).getTheObject();
-	    System.out.println("<jvnObject id=" + this.id + ">Serializable = " + this.theObject);
+	    Tools.println("<jvnObject %date id=" + this.id + ">Serializable = " + this.theObject);
 
 	    break;
 	case W:
-	    System.out.println("<jvnObject id=" + this.id + ">Verrou : W->????");
+	    Tools.println("<jvnObject %date id=" + this.id + ">Verrou : W->????");
 	    break;
 	case WC:
 	    this.state = StateLock.RWC;
-	    System.out.println("<jvnObject id=" + this.id + ">Verrou : WC->RWC");
+	    Tools.println("<jvnObject %date id=" + this.id + ">Verrou : WC->RWC");
 	    this.theObject = this.leServeur.jvnLockRead(id);
-	    System.out.println("<jvnObject id=" + this.id + ">Serializable = " + this.theObject);
+	    Tools.println("<jvnObject %date id=" + this.id + ">Serializable = " + this.theObject);
 	    break;
 	default: // state = R ou state = RWC
 	    break;
 	}
-	System.out.println("<jvnObject id=" + this.id + ">Demande verrou read, etat a la sortie : " + this.state);
+	Tools.println("<jvnObject %date id=" + this.id + ">Demande verrou read, etat a la sortie : " + this.state);
     }
 
     public void jvnLockWrite() throws JvnException {
@@ -60,26 +60,26 @@ public class JvnObjectImpl implements JvnObject {
 	    Serializable s = this.leServeur.jvnLockWrite(id);
 	    if (s != null)// Si dans le coordinateur
 		this.theObject = s;
-	    System.out.println("<jvnObject id=" + this.id + ">Verrou : NL|RC->W");
+	    Tools.println("<jvnObject %date id=" + this.id + ">Verrou : NL|RC->W");
 	    break;
 	case R:
 	case RWC:
 	    break;
 	case WC:
 	    this.state = StateLock.W;
-	    System.out.println("<jvnObject id=" + this.id + ">Verrou : WC->W");
+	    Tools.println("<jvnObject %date id=" + this.id + ">Verrou : WC->W");
 	    break;
 	default: // state = W
 	    break;
 	}
-	System.out.println("<jvnObject id=" + this.id + ">Demande verrou write, etat a la sortie : " + this.state);
+	Tools.println("<jvnObject %date id=" + this.id + ">Demande verrou write, etat a la sortie : " + this.state);
     }
 
     public void jvnUnLock() throws JvnException {
 	// if (this.leServeur != null)
 	// this.leServeur.jvnRegisterObject(nameGiven, this);
 
-	System.out.println("Etat avant le unlock : " + this.state);
+	Tools.println("%date Etat avant le unlock : " + this.state);
 
 	switch (this.state) {
 	case W:
@@ -100,7 +100,7 @@ public class JvnObjectImpl implements JvnObject {
 	    break;
 	}
 
-	System.out.println("Etat apres le unlock : " + this.state);
+	Tools.println("%date Etat apres le unlock : " + this.state);
 	/*
 	 * if(this.state == StateLock.W) this.leServeur.jvnRegisterObject(nameGiven, this); this.state = StateLock.NL;
 	 */
@@ -116,12 +116,12 @@ public class JvnObjectImpl implements JvnObject {
     }
 
     public void jvnInvalidateReader() throws JvnException {
-	System.out.println("<jvnObject id=" + this.id + ">InvalidateReader " + this.state + "->NL");
+	Tools.println("<jvnObject %date id=" + this.id + ">InvalidateReader " + this.state + "->NL");
 	this.state = StateLock.NL;
     }
 
     public Serializable jvnInvalidateWriter() throws JvnException {
-	System.out.println("<jvnObject id=" + this.id + ">InvalidateWriter " + this.state + "->NL");
+	Tools.println("<jvnObject %date id=" + this.id + ">InvalidateWriter " + this.state + "->NL");
 
 	switch (this.state) {
 	case W:
@@ -143,7 +143,7 @@ public class JvnObjectImpl implements JvnObject {
     }
 
     public Serializable jvnInvalidateWriterForReader() throws JvnException {
-	System.out.println("<jvnObject id=" + this.id + ">InvalidateWriterForReader " + this.state + "->RC");
+	Tools.println("<jvnObject %date id=" + this.id + ">InvalidateWriterForReader " + this.state + "->RC");
 	switch (this.state) {
 	case W:
 	    this.state = StateLock.RC;

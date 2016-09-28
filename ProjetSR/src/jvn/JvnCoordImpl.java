@@ -64,7 +64,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      *             ,JvnException
      **/
     public synchronized void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js) throws java.rmi.RemoteException, jvn.JvnException {
-	System.out.println("<COORDINATEUR>Register demandé de l'objet d'id " + jo.toString());
+	Tools.println("<COORDINATEUR %date>Register demandé de l'objet d'id " + jo.toString());
 	this.serviceNommage.put(jon, jo.jvnGetObjectId());
 	this.cache.put(jo.jvnGetObjectId(), jo);
     }
@@ -81,7 +81,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
      **/
     public synchronized JvnObject jvnLookupObject(String jon, JvnRemoteServer js) throws java.rmi.RemoteException, jvn.JvnException {
 
-	System.out.println("<COORDINATEUR>Lookup demandé sur " + jon);
+	Tools.println("<COORDINATEUR %date>Lookup demandé sur " + jon);
 
 	Integer id = this.serviceNommage.get(jon);
 	JvnObject o = this.cache.get(id);
@@ -121,10 +121,10 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 
 	JvnObject res = this.cache.get(joi);
 
-	System.out.println("<COORDIANTEUR>Demande de lock READ pour l'objet d'id=" + joi);
-	System.out.println("<COORDIANTEUR " + Date.from(Instant.now()).toString() + ">res null ? : " + (res == null));
+	Tools.println("<COORDIANTEUR %date>Demande de lock READ pour l'objet d'id=" + joi);
+	Tools.println("<COORDIANTEUR %date>res null ? : " + (res == null));
 
-	System.out.println("<COORDIANTEUR " + Date.from(Instant.now()).toString() + ">res.object null ? : " + (res.getTheObject() == null));
+	Tools.println("<COORDIANTEUR %date>res.object null ? : " + (res.getTheObject() == null));
 
 	List<CoupleVerrou> list = this.verrous.get(joi);
 
@@ -142,7 +142,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 		else {
 		    switch (couple.getState()) {
 		    case W:
-			System.out.println("<COORDIANTEUR " + Date.from(Instant.now()).toString() + ">Case W");
+			Tools.println("<COORDIANTEUR %date" + Date.from(Instant.now()).toString() + ">Case W");
 			res.setTheObject(couple.getJs().jvnInvalidateWriterForReader(joi));
 			this.cache.put(joi, res);
 			couple.setState(StateLock.R);
@@ -170,13 +170,13 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
     public synchronized Serializable jvnLockWrite(int joi, JvnRemoteServer js) throws java.rmi.RemoteException, JvnException {
 
 	JvnObject res = this.cache.get(joi);
-	System.out.println("<COORDIANTEUR>Demande de lock WRITE pour l'objet d'id=" + joi);
-	System.out.println("<COORDIANTEUR>res null ? : " + (res == null));
+	Tools.println("<COORDIANTEUR %date>Demande de lock WRITE pour l'objet d'id=" + joi);
+	Tools.println("<COORDIANTEUR %date>res null ? : " + (res == null));
 	if (res != null)
 	    System.out.println("<COORDIANTEUR>res.object null ? : " + (res.getTheObject() == null));
 	List<CoupleVerrou> list = this.verrous.get(joi);
 	if (list == null) {
-	    System.out.println("<COORDIANTEUR>Objet nouveau, creation d'une liste de verrous avec un verrou en W");
+	    Tools.println("<COORDIANTEUR %date>Objet nouveau, creation d'une liste de verrous avec un verrou en W");
 	    list = new LinkedList<CoupleVerrou>();
 	    list.add(new CoupleVerrou(js, StateLock.W));
 	    this.verrous.put(joi, list);
@@ -234,7 +234,7 @@ public class JvnCoordImpl extends UnicastRemoteObject implements JvnRemoteCoord 
 	    JvnRemoteCoord coordinateur = new JvnCoordImpl();
 	    Registry registre = LocateRegistry.createRegistry(1099);
 	    registre.bind("serveur", coordinateur);
-	    System.out.println("<COORDINATEUR>Coordinateur lancé !");
+	    Tools.println("<COORDINATEUR %date>Coordinateur lancé !");
 	} catch (Exception e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
