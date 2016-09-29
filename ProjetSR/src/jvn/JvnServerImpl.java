@@ -11,7 +11,6 @@ package jvn;
 import irc.Sentence;
 
 import java.rmi.RemoteException;
-import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 import java.io.*;
@@ -175,28 +174,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
 	    this.reading = true;
 	    Tools.println("<ServeurLocal %date>Demande de lock read au coordinateur");
 	    
-	    StateLock stateCour = this.verrous.get(joi);
-	    Serializable res = null;
-	    
-	    
-	    switch (stateCour) {
-		case NL:
-		    this.verrous.put(joi, StateLock.R);
-		    res = this.coordinateur.jvnLockRead(joi, this);
-		    break;
-		case RC:
-		    this.verrous.put(joi, StateLock.R);
-		    res = this.cache.get(joi).getTheObject();
-		    break;
-		case W:
-		    break;
-		case WC:
-		    this.verrous.put(joi, StateLock.RWC);
-		    res = this.cache.get(joi).getTheObject();
-		    break;
-		default: // state = R ou state = RWC
-		    break;
-		}
+	    Serializable res = this.coordinateur.jvnLockRead(joi, this);
 	    
 	    this.reading = false;
 	    return res;
@@ -221,29 +199,10 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
 	    Tools.println("<ServeurLocal %date>Demande de lock write au coordinateur");
 	    this.writing = true;
 	    
-	    StateLock stateCour = this.verrous.get(joi);
-	    Serializable res = null;
-	    switch (stateCour) {
-		case NL:
-		case RC:
-		    this.verrous.put(joi, StateLock.W);
-		    res = this.coordinateur.jvnLockWrite(joi, this);
-		    Tools.println("<ServeurLocal %date id=" + joi + ">Verrou : NL|RC->W");
-		    break;
-		case R:
-		case RWC:
-		    break;
-		case WC:
-		    this.verrous.put(joi, StateLock.W);
-		    Tools.println("<ServeurLocal %date id=" + joi + ">Verrou : WC->W");
-		    break;
-		default: // state = W
-		    break;
-		}
-	    //Serializable s = this.coordinateur.jvnLockWrite(joi, this);
+	    Serializable s = this.coordinateur.jvnLockWrite(joi, this);
 	    
 	    this.writing = false;
-	    return res;
+	    return s;
 	} catch (RemoteException e) {
 	    // TODO Auto-generated catch block
 	    e.printStackTrace();
@@ -271,8 +230,8 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
 		e.printStackTrace();
 	    }
 	this.verrous.put(joi, StateLock.NL);
-	this.cache.get(joi).jvnInvalidateReader();
-    };
+	//this.cache.get(joi).jvnInvalidateReader(); 
+    }
 
     /**
      * Invalidate the Write lock of the JVN object identified by id
@@ -296,6 +255,8 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
 	StateLock stateCour = this.verrous.get(joi);
 	switch (stateCour) {
 	case W:
+	case WC:
+	case RWC:
 	    this.verrous.put(joi, StateLock.NL);
 	    break;
 	default:
@@ -303,7 +264,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
 	}
 	
 	return this.cache.get(joi).jvnInvalidateWriter();
-    };
+    }
 
     /**
      * Reduce the Write lock of the JVN object identified by id
@@ -351,25 +312,22 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
 	this.coordinateur = coordinateur;
     }
 
-    public synchronized void jvnUnlock(int joi) {
+
+    public StateLock getStateLock(Integer id) {
+	return this.verrous.get(id);
+    }
+
+    public void setStateLock(Integer id, StateLock s) {
+	this.verrous.put(id, s);
+    }
+
+    public Serializable readCache(Integer id) {
 	
-	
-	StateLock stateCour = this.verrous.get(joi);
-	switch (stateCour) {
-	case W:
-	    // this.leServeur.jvnRegisterObject(nameGiven, this);
-	    this.verrous.put(joi, StateLock.WC);
-	    break;
-	case R:
-	    this.verrous.put(joi, StateLock.RC);
-	    break;
-	case RWC:
-	    this.verrous.put(joi, StateLock.WC);
-	    break;
-	default :
-	    break;
-	}
-	
-    };
+	return this.cache.get(id).getTheObject();
+    }
+
+    public void writeCache(Integer id, JvnObject o) {
+	this.putInCache(id, o);
+    }
 
 }

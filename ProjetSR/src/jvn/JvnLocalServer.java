@@ -73,6 +73,12 @@ public interface JvnLocalServer {
      **/
     public void jvnTerminate() throws jvn.JvnException;
     
+    public StateLock getStateLock(Integer id);
     
-    public void jvnUnlock(int joi);
+    public void setStateLock(Integer id, StateLock s);
+
+    public Serializable readCache(Integer id);
+    
+    public void writeCache(Integer id, JvnObject o);
+    
 }

@@ -17,12 +17,14 @@ public class Sentence implements java.io.Serializable {
 
     public void write(String text) {
 	data = text;
-	/*try {
-	    Thread.sleep(20000);
-	} catch (InterruptedException e) {
-	    // TODO Auto-generated catch block
-	    e.printStackTrace();
-	}*/
+	
+	for(int i = 0; i<10000000;i++){
+	    
+	    double x = Math.sqrt(Double.MAX_VALUE - Math.pow(i, i)); //grosse opération (en theorie ...)
+	    
+	}
+	
+	
     }
 
     public String read() {
