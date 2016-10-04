@@ -92,15 +92,70 @@ public class JvnObjectImpl implements JvnObject {
 	return theObject;
     }
 
-    public void jvnInvalidateReader() throws JvnException {
+    public synchronized void jvnInvalidateReader() throws JvnException {
+
+	if(this.leServeur.getStateLock(this.id) == StateLock.R)
+	    try {
+		wait();
+	    } catch (InterruptedException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	    }
+	
+	this.leServeur.setStateLock(this.id,  StateLock.NL);
+	
 	
     }
 
-    public Serializable jvnInvalidateWriter() throws JvnException {
+    public synchronized Serializable jvnInvalidateWriter() throws JvnException {
+	
+	StateLock stateCour = this.leServeur.getStateLock(this.id);
+	
+	switch (stateCour) {
+	case W:
+	case R:  
+	    try {
+		this.wait();
+		this.leServeur.setStateLock(this.id,  StateLock.NL);
+	} catch (InterruptedException e) {
+		e.printStackTrace();
+	}break;
+	case RC:
+	case WC:
+	case RWC:
+	    this.leServeur.setStateLock(this.id,  StateLock.NL);
+	    break;
+	default:
+	    break;
+	}
+	
+	
 	return theObject;
     }
 
-    public Serializable jvnInvalidateWriterForReader() throws JvnException {
+    public synchronized Serializable jvnInvalidateWriterForReader() throws JvnException {
+	
+	StateLock stateCour = this.leServeur.getStateLock(this.id);
+	switch (stateCour) {
+	case W:
+	    try {
+		wait();
+	    } catch (InterruptedException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	    }
+	    this.leServeur.setStateLock(this.id,  StateLock.RC);
+	    break;
+	case WC:
+	    this.leServeur.setStateLock(this.id,  StateLock.NL);
+	    break;
+	case RWC:
+	    this.leServeur.setStateLock(this.id,  StateLock.R);
+	    break;
+	default:
+	    break;
+	}
+	
 	return theObject;
     }
 

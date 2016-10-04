@@ -24,8 +24,6 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
     private HashMap<String, Integer> serviceNommage;
 
     private JvnRemoteCoord coordinateur;
-    private boolean writing;
-    private boolean reading;
 
     /**
      * Default constructor
@@ -81,7 +79,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
 
 	try {
 	    int id = this.coordinateur.jvnGetObjectId();
-	    JvnObject object = new JvnObjectImpl(o, id,this);
+	    JvnObject object = new JvnObjectImpl(o, id, this);
 	    this.verrous.put(id, StateLock.NL);
 	    object.jvnLockWrite();
 
@@ -136,7 +134,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
 		    this.verrous.put(o.jvnGetObjectId(), StateLock.NL);
 		    Tools.print("Sentence : " + ((Sentence) o.jvnGetObjectState()).read());
 		    this.cache.put(o.jvnGetObjectId(), o);
-		this.serviceNommage.put(jon, o.jvnGetObjectId());
+		    this.serviceNommage.put(jon, o.jvnGetObjectId());
 		}
 		return o;
 	    } catch (RemoteException e) {
@@ -150,16 +148,12 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
 	}
     }
 
-    
-    public void putInCache(Integer i, JvnObject o){
-	
+    public void putInCache(Integer i, JvnObject o) {
+
 	this.cache.put(i, o);
-	
-	
+
     }
-    
-    
-    
+
     /**
      * Get a Read lock on a JVN object
      * 
@@ -168,15 +162,13 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * @return the current JVN object state
      * @throws JvnException
      **/
-    public synchronized Serializable jvnLockRead(int joi) throws JvnException {
-	
+    public Serializable jvnLockRead(int joi) throws JvnException {
+
 	try {
-	    this.reading = true;
 	    Tools.println("<ServeurLocal %date>Demande de lock read au coordinateur");
-	    
+
 	    Serializable res = this.coordinateur.jvnLockRead(joi, this);
-	    
-	    this.reading = false;
+
 	    return res;
 	} catch (RemoteException e) {
 	    // TODO Auto-generated catch block
@@ -194,14 +186,12 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * @return the current JVN object state
      * @throws JvnException
      **/
-    public synchronized Serializable jvnLockWrite(int joi) throws JvnException {
+    public Serializable jvnLockWrite(int joi) throws JvnException {
 	try {
 	    Tools.println("<ServeurLocal %date>Demande de lock write au coordinateur");
-	    this.writing = true;
-	    
+
 	    Serializable s = this.coordinateur.jvnLockWrite(joi, this);
-	    
-	    this.writing = false;
+
 	    return s;
 	} catch (RemoteException e) {
 	    // TODO Auto-generated catch block
@@ -219,18 +209,11 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * @throws java.rmi.RemoteException
      *             ,JvnException
      **/
-    public synchronized void jvnInvalidateReader(int joi) throws java.rmi.RemoteException, jvn.JvnException {
+    public void jvnInvalidateReader(int joi) throws java.rmi.RemoteException, jvn.JvnException {
 
-	    Tools.println("<ServeurLocal %date>Demande d'invalidate reader");
-	while(reading)
-	    try {
-		wait();
-	    } catch (InterruptedException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-	    }
-	this.verrous.put(joi, StateLock.NL);
-	//this.cache.get(joi).jvnInvalidateReader(); 
+	Tools.println("<ServeurLocal %date>Demande d'invalidate reader");
+
+	this.cache.get(joi).jvnInvalidateReader();
     }
 
     /**
@@ -242,27 +225,10 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * @throws java.rmi.RemoteException
      *             ,JvnException
      **/
-    public synchronized Serializable jvnInvalidateWriter(int joi) throws java.rmi.RemoteException, jvn.JvnException {
+    public Serializable jvnInvalidateWriter(int joi) throws java.rmi.RemoteException, jvn.JvnException {
 
-	    Tools.println("<ServeurLocal %date>Demande d'invalidate writer");
-	while(writing)
-	    try {
-		wait();
-	    } catch (InterruptedException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-	    }
-	StateLock stateCour = this.verrous.get(joi);
-	switch (stateCour) {
-	case W:
-	case WC:
-	case RWC:
-	    this.verrous.put(joi, StateLock.NL);
-	    break;
-	default:
-	    break;
-	}
-	
+	Tools.println("<ServeurLocal %date>Demande d'invalidate writer");
+
 	return this.cache.get(joi).jvnInvalidateWriter();
     }
 
@@ -275,32 +241,12 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
      * @throws java.rmi.RemoteException
      *             ,JvnException
      **/
-    public synchronized Serializable jvnInvalidateWriterForReader(int joi) throws java.rmi.RemoteException, jvn.JvnException {
+    public Serializable jvnInvalidateWriterForReader(int joi) throws java.rmi.RemoteException, jvn.JvnException {
 
-	    Tools.println("<ServeurLocal %date>Demande d'invalidate writerforreader");
-	while(writing)
-	    try {
-		wait();
-	    } catch (InterruptedException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-	    }
+	Tools.println("<ServeurLocal %date>Demande d'invalidate writerforreader");
+
 	
-	StateLock stateCour = this.verrous.get(joi);
-	switch (stateCour) {
-	case W:
-	    this.verrous.put(joi, StateLock.RC);
-	    break;
-	case WC:
-	    this.verrous.put(joi, StateLock.NL);
-	    break;
-	case RWC:
-	    this.verrous.put(joi, StateLock.R);
-	    break;
-	   default : break;
-	}
-	
-	
+
 	return this.cache.get(joi).jvnInvalidateWriterForReader();
     }
 
@@ -312,7 +258,6 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
 	this.coordinateur = coordinateur;
     }
 
-
     public StateLock getStateLock(Integer id) {
 	return this.verrous.get(id);
     }
@@ -322,7 +267,7 @@ public class JvnServerImpl extends UnicastRemoteObject implements JvnLocalServer
     }
 
     public Serializable readCache(Integer id) {
-	
+
 	return this.cache.get(id).getTheObject();
     }
 

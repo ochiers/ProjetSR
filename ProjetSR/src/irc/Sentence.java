@@ -18,11 +18,11 @@ public class Sentence implements java.io.Serializable {
     public void write(String text) {
 	data = text;
 	
-	for(int i = 0; i<10000000;i++){
+	/*for(int i = 0; i<10000000;i++){
 	    
 	    double x = Math.sqrt(Double.MAX_VALUE - Math.pow(i, i)); //grosse opération (en theorie ...)
 	    
-	}
+	}*/
 	
 	
     }
