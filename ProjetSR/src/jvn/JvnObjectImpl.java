@@ -126,7 +126,7 @@ public class JvnObjectImpl implements JvnObject {
 	    this.leServeur.setStateLock(this.id,  StateLock.NL);
 	    break;
 	default:
-	    break;
+	    break; 
 	}
 	
 	
