@@ -9,20 +9,15 @@ package irc;
 
 import java.awt.*;
 import java.awt.event.*;
-
 import jvn.*;
-
-import java.io.*;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-
-import jdk.nashorn.internal.scripts.JS;
 
 public class Irc {
     public TextArea text;
     public TextField data;
     Frame frame;
-    JvnObject sentence;
+    ISentence sentence;
 
     /**
      * main method create a JVN object nammed IRC for representing the Chat application
@@ -30,27 +25,14 @@ public class Irc {
     public static void main(String argv[]) {
 	try {
 
-	    
 	    Registry registre = LocateRegistry.getRegistry("localhost");
 	    JvnRemoteCoord coordinateur = (JvnRemoteCoord) registre.lookup("serveur");
-	    
 
 	    // initialize JVN
 	    JvnServerImpl js = JvnServerImpl.jvnGetServer(coordinateur);
-	    
-	    
-	    
-	    // look up the IRC object in the JVN server
-	    // if not found, create it, and register it in the JVN server
-	    JvnObject jo = js.jvnLookupObject("IRC");
 
-	    if (jo == null) {
-		jo = js.jvnCreateObject((Serializable) new Sentence());
-		// after creation, I have a write lock on the object
-		jo.jvnUnLock();
-		js.jvnRegisterObject("IRC", jo);
-	    }
-	    // create the graphical part of the Chat application
+	    ISentence jo = (ISentence) MyProxy.newInstance(js, "IRC", Sentence.class);
+
 	    new Irc(jo);
 
 	} catch (Exception e) {
@@ -65,7 +47,7 @@ public class Irc {
      * @param jo
      *            the JVN object representing the Chat
      **/
-    public Irc(JvnObject jo) {
+    public Irc(ISentence jo) {
 	sentence = jo;
 	frame = new Frame();
 	frame.setLayout(new GridLayout(1, 1));
@@ -81,14 +63,21 @@ public class Irc {
 	Button write_button = new Button("write");
 	write_button.addActionListener(new writeListener(this));
 	frame.add(write_button);
-	
+
 	Button unlock_button = new Button("unlock");
 	unlock_button.addActionListener(new unlockListener(this));
 	frame.add(unlock_button);
-	
+
 	frame.setSize(545, 201);
 	text.setBackground(Color.black);
 	frame.setVisible(true);
+
+	frame.addWindowListener(new WindowAdapter() {
+	    public void windowClosing(WindowEvent we) {
+		System.exit(0);
+	    }
+	});
+
     }
 }
 
@@ -108,18 +97,15 @@ class readListener implements ActionListener {
     public void actionPerformed(ActionEvent e) {
 	try {
 	    // lock the object in read mode
-	    irc.sentence.jvnLockRead();
+	    // irc.sentence.jvnLockRead();
 
 	    // invoke the method
-	    String s = ((Sentence) (irc.sentence.jvnGetObjectState())).read();
-
-	    // unlock the object
-	   // irc.sentence.jvnUnLock();
+	    String s = irc.sentence.read();
 
 	    // display the read value
 	    irc.data.setText(s);
 	    irc.text.append(s + "\n");
-	} catch (JvnException je) {
+	} catch (Exception je) {
 	    System.out.println("IRC problem : " + je.getMessage());
 	}
     }
@@ -143,14 +129,10 @@ class writeListener implements ActionListener {
 	    // get the value to be written from the buffer
 	    String s = irc.data.getText();
 
-	    // lock the object in write mode
-	    irc.sentence.jvnLockWrite();
 	    // invoke the method
-	    ((Sentence) (irc.sentence.jvnGetObjectState())).write(s);
-	    
-	    // unlock the object
-	    //irc.sentence.jvnUnLock();
-	} catch (JvnException je) {
+	    irc.sentence.write(s);
+
+	} catch (Exception je) {
 	    System.out.println("IRC problem  : " + je.getMessage());
 	}
     }
@@ -167,11 +149,8 @@ class unlockListener implements ActionListener {
      * Management of user events
      **/
     public void actionPerformed(ActionEvent e) {
-	try {
-	    // unlock the object
-	    irc.sentence.jvnUnLock();
-	} catch (JvnException je) {
-	    System.out.println("IRC problem  : " + je.getMessage());
-	}
+	/*
+	 * try { // unlock the object irc.sentence.jvnUnLock(); } catch (JvnException je) { System.out.println("IRC problem  : " + je.getMessage()); }
+	 */
     }
 }
