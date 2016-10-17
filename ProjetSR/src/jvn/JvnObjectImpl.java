@@ -19,7 +19,7 @@ public class JvnObjectImpl implements JvnObject {
 
     public void jvnLockRead() throws JvnException {
 
-	System.out.println(this.leServeur.getStateLock(this.id));
+	//System.out.println(this.leServeur.getStateLock(this.id));
 	
 	switch (this.leServeur.getStateLock(this.id)) {
 	case NL:
